@@ -1,0 +1,191 @@
+openapi: "3.0.3"
+info:
+  title: NonPwdLogin API
+  description: |
+    Passwordless authentication system using TOTP (RFC 6238).
+    Registration via email → QR code with TOTP secret → Login with 6-digit code → JWT issued.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      description: |
+        Creates a user account with the given email. Generates a TOTP secret and returns
+        a standard otpauth:// URL for QR code display. The secret should be stored by the
+        client (e.g., authenticator app, mini program, or web TOTP generator).
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email address
+                  example: user@example.com
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - qrUrl
+                  - secret
+                  - email
+                properties:
+                  qrUrl:
+                    type: string
+                    format: uri
+                    description: Standard otpauth:// TOTP URL for QR code
+                    example: "otpauth://totp/NonPwdLogin:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=NonPwdLogin"
+                  secret:
+                    type: string
+                    description: Base32-encoded 20-byte TOTP secret
+                    example: JBSWY3DPEHPK3PXP
+                  email:
+                    type: string
+                    format: email
+                    description: Registered email (lowercased)
+                    example: user@example.com
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Email already registered"
+
+  /api/auth/login:
+    post:
+      summary: Login with email and TOTP code
+      description: |
+        Verifies the 6-digit TOTP code against the user's stored secret.
+        On success, returns a JWT Bearer token valid for 7 days.
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Registered email
+                  example: user@example.com
+                code:
+                  type: string
+                  pattern: "^\\d{6}$"
+                  description: 6-digit TOTP code from client authenticator
+                  example: "482916"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - token
+                  - email
+                properties:
+                  token:
+                    type: string
+                    description: JWT Bearer token (expires in 7 days)
+                    example: eyJhbGciOiJIUzI1NiIs...
+                  email:
+                    type: string
+                    format: email
+                    description: Authenticated email
+                    example: user@example.com
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Invalid TOTP code
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid TOTP code"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+
+components:
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Invalid email format"
+
+  schemas:
+    TOTPConfig:
+      type: object
+      description: TOTP algorithm configuration used by the server
+      properties:
+        algorithm:
+          type: string
+          enum: [sha1]
+          default: sha1
+        digits:
+          type: integer
+          default: 6
+        step:
+          type: integer
+          default: 30
+          description: Time window in seconds
+        window:
+          type: integer
+          default: 1
+          description: Allowed drift in number of steps (±1 = ±30s)
+        secretBytes:
+          type: integer
+          default: 20
+          description: Random secret length in bytes (160 bit)
+        secretEncoding:
+          type: string
+          default: Base32
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /api/auth/login

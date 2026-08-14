@@ -1,0 +1,111 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - email with dots and plus 1`] = `
+{
+  "confirmUrl": StringMatching /\\\\/auth\\\\/confirm\\\\//,
+  "email": Any<String>,
+  "qrUrl": StringMatching /\\^otpauth:\\\\/\\\\/totp\\\\//,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - email with dots and plus 2`] = `
+{
+  "email": Any<String>,
+  "secret": StringMatching /\\^\\[A-Z2-7\\]\\+=\\*\\$/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - email with dots and plus 3`] = `
+{
+  "email": Any<String>,
+  "token": StringMatching /\\^eyJ/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - short email 1`] = `
+{
+  "confirmUrl": StringMatching /\\\\/auth\\\\/confirm\\\\//,
+  "email": Any<String>,
+  "qrUrl": StringMatching /\\^otpauth:\\\\/\\\\/totp\\\\//,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - short email 2`] = `
+{
+  "email": Any<String>,
+  "secret": StringMatching /\\^\\[A-Z2-7\\]\\+=\\*\\$/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - short email 3`] = `
+{
+  "email": Any<String>,
+  "token": StringMatching /\\^eyJ/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - standard email 1`] = `
+{
+  "confirmUrl": StringMatching /\\\\/auth\\\\/confirm\\\\//,
+  "email": Any<String>,
+  "qrUrl": StringMatching /\\^otpauth:\\\\/\\\\/totp\\\\//,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - standard email 2`] = `
+{
+  "email": Any<String>,
+  "secret": StringMatching /\\^\\[A-Z2-7\\]\\+=\\*\\$/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) completes full auth flow - standard email 3`] = `
+{
+  "email": Any<String>,
+  "token": StringMatching /\\^eyJ/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) supports multiple users each completing the full flow independently 1`] = `
+{
+  "confirmUrl": StringMatching /\\\\/auth\\\\/confirm\\\\//,
+  "email": Any<String>,
+  "qrUrl": StringMatching /\\^otpauth:\\\\/\\\\/totp\\\\//,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) supports multiple users each completing the full flow independently 2`] = `
+{
+  "email": Any<String>,
+  "secret": StringMatching /\\^\\[A-Z2-7\\]\\+=\\*\\$/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) supports multiple users each completing the full flow independently 3`] = `
+{
+  "confirmUrl": StringMatching /\\\\/auth\\\\/confirm\\\\//,
+  "email": Any<String>,
+  "qrUrl": StringMatching /\\^otpauth:\\\\/\\\\/totp\\\\//,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) supports multiple users each completing the full flow independently 4`] = `
+{
+  "email": Any<String>,
+  "secret": StringMatching /\\^\\[A-Z2-7\\]\\+=\\*\\$/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) supports multiple users each completing the full flow independently 5`] = `
+{
+  "email": Any<String>,
+  "token": StringMatching /\\^eyJ/,
+}
+`;
+
+exports[`Full flow: register → confirm → login (parameterized) supports multiple users each completing the full flow independently 6`] = `
+{
+  "email": Any<String>,
+  "token": StringMatching /\\^eyJ/,
+}
+`;
