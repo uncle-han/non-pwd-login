@@ -1,191 +1,257 @@
-openapi: "3.0.3"
+openapi: 3.0.3
 info:
   title: NonPwdLogin API
   description: |
-    Passwordless authentication system using TOTP (RFC 6238).
-    Registration via email → QR code with TOTP secret → Login with 6-digit code → JWT issued.
-  version: "1.0.0"
+    基于 TOTP (Time-based One-Time Password，RFC 6238) 的无密码登录系统。
+    
+    TOTP 工作原理：
+    1. 用户注册后获得一个密钥（secret），存入身份验证器 App
+    2. App 每 30 秒根据密钥生成一个 6 位数字验证码
+    3. 登录时用户输入当前验证码，服务端验证通过后签发 JWT
+    
+    流程：注册 → 扫码/确认 → 登录（输入验证码）→ 获取 JWT → 携带 JWT 访问受保护接口
+  version: 1.0.0
+  contact:
+    name: NonPwdLogin
+
 servers:
   - url: http://localhost:3000
-    description: Development server
+    description: 本地开发服务器
 
 paths:
-  /api/auth/register:
+  /api/v1/auth/register:
     post:
-      summary: Register a new user
+      operationId: registerUser
+      summary: 注册新用户
       description: |
-        Creates a user account with the given email. Generates a TOTP secret and returns
-        a standard otpauth:// URL for QR code display. The secret should be stored by the
-        client (e.g., authenticator app, mini program, or web TOTP generator).
-      tags:
-        - Auth
+        创建新用户账号，生成 TOTP 密钥和确认链接。
+        注册后用户处于"未确认"状态，需要通过 confirmUrl 确认后才能登录。
+      tags: [Auth]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - email
-              properties:
-                email:
-                  type: string
-                  format: email
-                  description: User email address
-                  example: user@example.com
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: "user@example.com"
       responses:
-        "201":
-          description: Registration successful
+        '201':
+          description: 注册成功
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - qrUrl
-                  - secret
-                  - email
-                properties:
-                  qrUrl:
-                    type: string
-                    format: uri
-                    description: Standard otpauth:// TOTP URL for QR code
-                    example: "otpauth://totp/NonPwdLogin:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=NonPwdLogin"
-                  secret:
-                    type: string
-                    description: Base32-encoded 20-byte TOTP secret
-                    example: JBSWY3DPEHPK3PXP
-                  email:
-                    type: string
-                    format: email
-                    description: Registered email (lowercased)
-                    example: user@example.com
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "409":
-          description: Email already registered
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: 邮箱格式无效
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Email already registered"
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid email format"
+        '409':
+          description: 邮箱已注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Email already registered"
 
-  /api/auth/login:
-    post:
-      summary: Login with email and TOTP code
+  /api/v1/auth/confirm/{token}:
+    get:
+      operationId: confirmRegistration
+      summary: 确认用户注册
       description: |
-        Verifies the 6-digit TOTP code against the user's stored secret.
-        On success, returns a JWT Bearer token valid for 7 days.
-      tags:
-        - Auth
+        通过确认令牌激活用户账号，并返回 TOTP 密钥。
+        此接口设计为幂等：已确认的账号再次调用不会产生副作用。
+      tags: [Auth]
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: 注册时返回的确认令牌（UUID v4 格式）
+          schema:
+            type: string
+            example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: 确认成功，返回 TOTP 密钥
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmResponse'
+        '404':
+          description: 令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid confirm token"
+
+  /api/v1/auth/login:
+    post:
+      operationId: loginUser
+      summary: 用户登录
+      description: |
+        使用邮箱和 TOTP 动态码登录。
+        前提条件：用户已注册且已通过 confirmUrl 确认账号。
+        TOTP 验证码每 30 秒更新一次，可接受当前前后各 30 秒内的码。
+      tags: [Auth]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required:
-                - email
-                - code
-              properties:
-                email:
-                  type: string
-                  format: email
-                  description: Registered email
-                  example: user@example.com
-                code:
-                  type: string
-                  pattern: "^\\d{6}$"
-                  description: 6-digit TOTP code from client authenticator
-                  example: "482916"
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "user@example.com"
+              code: "482916"
       responses:
-        "200":
-          description: Login successful
+        '200':
+          description: 登录成功，返回 JWT
           content:
             application/json:
               schema:
-                type: object
-                required:
-                  - token
-                  - email
-                properties:
-                  token:
-                    type: string
-                    description: JWT Bearer token (expires in 7 days)
-                    example: eyJhbGciOiJIUzI1NiIs...
-                  email:
-                    type: string
-                    format: email
-                    description: Authenticated email
-                    example: user@example.com
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          description: Invalid TOTP code
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: 请求参数格式错误
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid TOTP code"
-        "404":
-          description: User not found
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: TOTP 验证码无效（错误/过期/密钥不匹配）
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "User not found"
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Invalid TOTP code"
+        '403':
+          description: 账号未确认
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Registration not confirmed"
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "User not found"
+
+  /healthcheck:
+    get:
+      operationId: healthCheck
+      summary: 健康检查
+      description: 检查服务运行状态和数据库连接状态。
+      tags: [System]
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
 
 components:
-  responses:
-    BadRequest:
-      description: Invalid request parameters
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: "Invalid email format"
-
   schemas:
-    TOTPConfig:
+    RegisterRequest:
       type: object
-      description: TOTP algorithm configuration used by the server
+      required: [email]
       properties:
-        algorithm:
+        email:
           type: string
-          enum: [sha1]
-          default: sha1
-        digits:
-          type: integer
-          default: 6
-        step:
-          type: integer
-          default: 30
-          description: Time window in seconds
-        window:
-          type: integer
-          default: 1
-          description: Allowed drift in number of steps (±1 = ±30s)
-        secretBytes:
-          type: integer
-          default: 20
-          description: Random secret length in bytes (160 bit)
-        secretEncoding:
+          format: email
+          description: 用户邮箱，将自动转换为小写
+          example: "user@example.com"
+
+    RegisterResponse:
+      type: object
+      properties:
+        qrUrl:
           type: string
-          default: Base32
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token obtained from /api/auth/login
+          description: TOTP URI，用于身份验证器 App 扫描添加账户
+          example: "otpauth://totp/NonPwdLogin:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=NonPwdLogin"
+        confirmUrl:
+          type: string
+          description: 确认链接，浏览器打开即可完成账号激活
+          example: "http://localhost:3000/api/v1/auth/confirm/550e8400-e29b-41d4-a716-446655440000"
+        secret:
+          type: string
+          description: Base32 编码的 TOTP 密钥，客户端需保存
+          example: "JBSWY3DPEHPK3PXP"
+        email:
+          type: string
+          description: 注册邮箱（已小写化）
+          example: "user@example.com"
+
+    ConfirmResponse:
+      type: object
+      properties:
+        secret:
+          type: string
+          description: TOTP 密钥，用于客户端本地生成动态验证码
+          example: "JBSWY3DPEHPK3PXP"
+        email:
+          type: string
+          description: 确认的用户邮箱
+          example: "user@example.com"
+
+    LoginRequest:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+          format: email
+          description: 已注册且已确认的邮箱
+          example: "user@example.com"
+        code:
+          type: string
+          pattern: '^\d{6}$'
+          description: 身份验证器 App 生成的 6 位数字验证码
+          example: "482916"
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT 访问令牌，有效期 7 天
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        email:
+          type: string
+          description: 登录邮箱
+          example: "user@example.com"
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: 服务状态
+          example: "ok"
+        uptime:
+          type: number
+          description: 服务运行时间（秒）
+          example: 12345.678
+        db:
+          type: string
+          description: 数据库连接状态
+          enum: [connected, disconnected]
+          example: "connected"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: 错误描述

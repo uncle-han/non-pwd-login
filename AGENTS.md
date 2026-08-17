@@ -31,6 +31,7 @@ non-pwd-login/
 └── server/                ← Node.js 后端（唯一活跃代码目录）
     ├── package.json       ← ES Module ("type": "module")
     ├── API.md             ← API 文档（人类阅读）
+    ├── API_REFERENCE.md   ← API 文档（完整版，含错误码详解）
     ├── openapi.yaml       ← OpenAPI 3.0 规范
     ├── docker-compose.yml
     ├── src/
@@ -39,7 +40,7 @@ non-pwd-login/
     │   ├── db.js          ← 数据访问层（createUser, findUserByEmail, findUserByConfirmToken, confirmUser, clear）
     │   ├── routes/
     │   │   ├── auth.js    ← POST /register, GET /confirm/:token, POST /login
-    │   │   └── health.js  ← GET /api/health
+    │   │   └── health.js  ← GET /healthcheck
     │   ├── middleware/
     │   │   └── validate.js ← 请求字段校验（邮箱格式、6 位验证码）
     │   ├── services/
@@ -134,3 +135,36 @@ npm start            # 生产启动
 
 ## 不要读取的文件
 - noted.md（原始需求，无关）
+
+## API 文档维护规则
+
+**⚠️ 重要：任何 API 相关改动必须同步更新以下文档：**
+
+### 需要同步更新的文件
+
+| 文件 | 内容 |
+|------|------|
+| `server/src/routes/*.js` | API 路由实现（源码） |
+| `server/API.md` | 简版 API 文档（人类阅读） |
+| `server/API_REFERENCE.md` | 完整版 API 文档（含错误码详解） |
+| `server/openapi.yaml` | OpenAPI 3.0 规范（AI / 工具链消费） |
+
+### 触发更新的场景
+
+1. **新增/删除路由** → 更新所有 API 文档
+2. **修改请求参数**（增删字段、修改类型）→ 更新所有 API 文档
+3. **修改响应结构** → 更新所有 API 文档
+4. **修改错误码**（增删或修改触发条件）→ 更新所有 API 文档
+5. **修改业务逻辑**（如注册流程、确认流程）→ 更新所有 API 文档
+
+### 检查清单
+
+修改 `server/src/routes/` 下的任何文件后，检查：
+
+- [ ] `API.md` 是否需要更新？
+- [ ] `API_REFERENCE.md` 是否需要更新？
+- [ ] `openapi.yaml` 是否需要更新？
+- [ ] 请求参数描述是否准确？
+- [ ] 响应字段描述是否准确？
+- [ ] 错误码触发条件是否准确？
+- [ ] `README.md` 中的接口一览表是否需要更新？

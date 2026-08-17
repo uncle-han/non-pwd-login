@@ -18,7 +18,7 @@ afterAll(async () => {
   await closeDb();
 });
 
-beforeEach(async () => {\
+beforeEach(async () => {
   await clear();
 });
 

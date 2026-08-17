@@ -5,10 +5,11 @@
 - **Base URL**: `http://localhost:3000`
 - **Auth**: JWT Bearer token（登录后获取，后续受保护路由使用）
 - **Content-Type**: `application/json`
+- **API 版本**: `/api/v1/`
 
 ---
 
-## POST /api/auth/register
+## POST /api/v1/auth/register
 
 注册新用户，获取 TOTP 密钥和二维码 URL。
 
@@ -49,7 +50,7 @@
 
 ---
 
-## POST /api/auth/login
+## POST /api/v1/auth/login
 
 用邮箱 + TOTP 动态码登录，获取 JWT token。
 

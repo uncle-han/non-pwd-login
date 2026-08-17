@@ -30,7 +30,7 @@ COPY . .
 EXPOSE ${PORT}
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost:${PORT}/api/health || exit 1
+  CMD wget -qO- http://localhost:${PORT}/healthcheck || exit 1
 
 USER ${APP_USER}
 

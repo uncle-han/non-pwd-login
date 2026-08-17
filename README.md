@@ -11,8 +11,9 @@
 ```
 .
 ├── server/          # Node.js + Express 后端
-│   ├── API.md       # API 接口文档（人类阅读）
-│   ├── openapi.yaml # OpenAPI 3.0 规范（AI / 工具链消费）
+│   ├── API.md              # API 接口文档（简版）
+│   ├── API_REFERENCE.md    # API 接口文档（完整版，含错误码详解）
+│   ├── openapi.yaml        # OpenAPI 3.0 规范（AI / 工具链消费）
 │   └── src/
 ├── client/          # React 前端（待实现）
 ├── miniapp/         # 微信小程序 TOTP 客户端（可选）
@@ -83,17 +84,24 @@ npm run test:ci    # 单次运行测试
 npm run dev        # nodemon 热重载
 ```
 
-## API
+## API 文档
 
-两个核心端点：
+| 文件 | 说明 |
+|------|------|
+| `server/API.md` | 简版 API 文档（人类快速阅读） |
+| `server/API_REFERENCE.md` | 完整版 API 文档（含错误码触发条件详解） |
+| `server/openapi.yaml` | OpenAPI 3.0 规范（AI / Postman / 工具链自动解析） |
+
+### 接口一览
 
 | Method | Path | 说明 |
 |--------|------|------|
-| POST | `/api/auth/register` | 注册（邮箱 → TOTP 二维码 URL + 确认 URL） |
-| GET | `/api/auth/confirm/:token` | 确认注册（返回 TOTP 密钥） |
-| POST | `/api/auth/login` | 登录（邮箱 + 6 位动态码 → JWT） |
+| POST | `/api/v1/auth/register` | 注册（邮箱 → TOTP 二维码 URL + 确认 URL） |
+| GET | `/api/v1/auth/confirm/:token` | 确认注册（返回 TOTP 密钥） |
+| POST | `/api/v1/auth/login` | 登录（邮箱 + 6 位动态码 → JWT） |
+| GET | `/healthcheck` | 健康检查 |
 
-详见 `server/API.md` 或 `server/openapi.yaml`。
+详见 `server/API_REFERENCE.md` 或 `server/openapi.yaml`。
 
 ## 流程
 

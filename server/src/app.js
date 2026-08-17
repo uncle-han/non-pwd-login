@@ -5,7 +5,7 @@ import { loadConfig } from './config.js';
 import authRoutes from './routes/auth.js';
 import healthRoutes from './routes/health.js';
 import { initDb } from './database/index.js';
-import { HEALTH_PATH, DEBUG_ERROR_PATH, ERR, HTTP, APP_NAME, SUPPORTED_VERSIONS } from './data/constant.js';
+import { DEBUG_ERROR_PATH, ERR, HTTP, APP_NAME, SUPPORTED_VERSIONS } from './data/constant.js';
 
 const config = loadConfig();
 const app = express();
@@ -24,7 +24,7 @@ app.use('/:prefix/:version/auth', (req, res, next) => {
   next();
 }, authRoutes);
 
-app.use(HEALTH_PATH, healthRoutes);
+app.use('/', healthRoutes);
 
 if (config.env !== 'production') {
   app.get(DEBUG_ERROR_PATH, (_req, _res, next) => {
